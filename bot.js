@@ -19,7 +19,7 @@ const SITE_URL = 'https://getflixfree.vercel.app/';
 
 // ✅ CONFIGURAÇÃO DOS 30 IPs PREMIUM DO DECODO (3 Contas)
 const DECODO_PROXIES = [
-    // CONTA 1 (data.txt)
+    // CONTA 1
     { host: 'dc.decodo.com', port: 10001, user: 'spnukwi4di', pass: 'k4i4umY=6KaAD3tezz' },
     { host: 'dc.decodo.com', port: 10002, user: 'spnukwi4di', pass: 'k4i4umY=6KaAD3tezz' },
     { host: 'dc.decodo.com', port: 10003, user: 'spnukwi4di', pass: 'k4i4umY=6KaAD3tezz' },
@@ -31,7 +31,7 @@ const DECODO_PROXIES = [
     { host: 'dc.decodo.com', port: 10009, user: 'spnukwi4di', pass: 'k4i4umY=6KaAD3tezz' },
     { host: 'dc.decodo.com', port: 10010, user: 'spnukwi4di', pass: 'k4i4umY=6KaAD3tezz' },
     
-    // CONTA 2 (data (1).txt)
+    // CONTA 2
     { host: 'dc.decodo.com', port: 10001, user: 'spz6w15pol', pass: 'm_wtmwAvDIp3v9t5F5' },
     { host: 'dc.decodo.com', port: 10002, user: 'spz6w15pol', pass: 'm_wtmwAvDIp3v9t5F5' },
     { host: 'dc.decodo.com', port: 10003, user: 'spz6w15pol', pass: 'm_wtmwAvDIp3v9t5F5' },
@@ -43,7 +43,7 @@ const DECODO_PROXIES = [
     { host: 'dc.decodo.com', port: 10009, user: 'spz6w15pol', pass: 'm_wtmwAvDIp3v9t5F5' },
     { host: 'dc.decodo.com', port: 10010, user: 'spz6w15pol', pass: 'm_wtmwAvDIp3v9t5F5' },
 
-    // CONTA 3 (data (2).txt)
+    // CONTA 3
     { host: 'dc.decodo.com', port: 10001, user: 'spvzdjykgk', pass: 'Mp66ivYOem7Apt8d=n' },
     { host: 'dc.decodo.com', port: 10002, user: 'spvzdjykgk', pass: 'Mp66ivYOem7Apt8d=n' },
     { host: 'dc.decodo.com', port: 10003, user: 'spvzdjykgk', pass: 'Mp66ivYOem7Apt8d=n' },
@@ -81,16 +81,9 @@ async function executarSequenciaGetflix() {
     const maxRetries = 10; 
     
     for (let i = 0; i < maxRetries; i++) {
-        // Sorteia um dos 30 IPs do Decodo
         const selectedProxy = DECODO_PROXIES[Math.floor(Math.random() * DECODO_PROXIES.length)];
-        
-        // URL para o Axios testar (com user e pass)
         const proxyUrlFull = `http://${selectedProxy.user}:${selectedProxy.pass}@${selectedProxy.host}:${selectedProxy.port}`;
-        
-        // URL para o Chrome (sem usuário e senha)
         const proxyUrlChrome = `http://${selectedProxy.host}:${selectedProxy.port}`;
-        
-        // Credenciais separadas para o Puppeteer
         const authCredentials = {
             username: selectedProxy.user,
             password: selectedProxy.pass
@@ -119,16 +112,14 @@ async function executarSequenciaGetflix() {
                     '--disable-setuid-sandbox', 
                     '--disable-dev-shm-usage',
                     '--ignore-certificate-errors',
+                    '--disable-popup-blocking', // ✅ PERMITE POPUPS DO MONETAG
                     `--proxy-server=${proxyUrlChrome}`
                 ]
             });
 
             page = await browser.newPage();
-            
-            // FAZ A AUTENTICAÇÃO DO PROXY DENTRO DO NAVEGADOR
             await page.authenticate(authCredentials);
-            
-            page.setDefaultTimeout(45000); 
+            page.setDefaultTimeout(30000); 
             
             await page.setRequestInterception(true);
             page.on('request', (req) => {
@@ -155,7 +146,6 @@ async function executarSequenciaGetflix() {
                 Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
             });
 
-            // MONITOR DE MONETIZAÇÃO
             browser.on('targetcreated', async (target) => {
                 if (target.type() === 'page') {
                     const adPage = await target.page();
@@ -175,7 +165,6 @@ async function executarSequenciaGetflix() {
             await page.goto(SITE_URL, { waitUntil: 'domcontentloaded' });
             await page.waitForSelector('#main-content .mc');
 
-            // FUNÇÕES AUXILIARES
             const pegarCentroDoSeletor = async (seletor) => {
                 return await page.evaluate((sel) => {
                     const el = document.querySelector(sel);
@@ -209,16 +198,13 @@ async function executarSequenciaGetflix() {
                     await moverMouseRealista(coords.x, coords.y);
                     await randomDelay(100, 300);
                     await page.mouse.click(coords.x, coords.y);
-                } catch (e) {
-                    console.warn('Falha ao clicar:', e.message);
-                }
+                } catch (e) {}
             };
 
             console.log('✅ Site carregado. Iniciando comportamento humano...');
             await moverMouseRealista(600, 400);
             await randomDelay(1000, 2000);
             
-            // BLOCO 1: BUSCA
             try {
                 if (Math.random() < 0.3) {
                     console.log('⌨️ Abrindo busca e digitando...');
@@ -238,24 +224,6 @@ async function executarSequenciaGetflix() {
             await page.evaluate(() => window.scrollBy(0, 600));
             await randomDelay(1000, 3000);
 
-            // BLOCO 2: BANNERS
-            try {
-                if (Math.random() < 0.4) {
-                    const bannerCoords = await pegarCentroDeVarios('.ad-mobile, .ad-native');
-                    if (bannerCoords.length > 0) {
-                        const target = bannerCoords[Math.floor(Math.random() * bannerCoords.length)];
-                        const currentUrl = page.url();
-                        await clicarNasCoordenadas(target);
-                        await randomDelay(2000, 4000); 
-                        if (page.url() !== currentUrl) {
-                            await page.goBack({ waitUntil: 'domcontentloaded' });
-                            await randomDelay(1000, 2000);
-                        }
-                    }
-                }
-            } catch (e) { console.warn('Erro no banner:', e.message); }
-
-            // BLOCO 3: FILME
             try {
                 const filmeCoords = await pegarCentroDeVarios('#main-content .mc');
                 if (filmeCoords.length > 0) {
@@ -265,36 +233,10 @@ async function executarSequenciaGetflix() {
                 }
             } catch (e) { console.warn('Erro ao clicar no filme:', e.message); }
 
-            // BLOCO 4: PLAYER
             try {
                 await page.waitForSelector('#mainPlayer', { timeout: 30000 });
                 await randomDelay(2000, 4000);
-                
-                if (Math.random() < 0.3) {
-                    const playerBanners = await pegarCentroDeVarios('.ad-mobile, .ad-sidebar');
-                    if (playerBanners.length > 0) {
-                        const target = playerBanners[Math.floor(Math.random() * playerBanners.length)];
-                        await clicarNasCoordenadas(target);
-                        await randomDelay(2000, 3000);
-                    }
-                }
             } catch (e) { console.warn('Erro no player:', e.message); }
-
-            // BLOCO 5: RECOMENDAÇÕES
-            try {
-                await page.evaluate(() => {
-                    const recs = document.getElementById('recsSection');
-                    if (recs) recs.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                });
-                await randomDelay(2000, 4000);
-
-                const recsCoords = await pegarCentroDeVarios('#recsGrid .mc');
-                if (recsCoords.length > 0) {
-                    const target = recsCoords[Math.floor(Math.random() * recsCoords.length)];
-                    await clicarNasCoordenadas(target);
-                    await randomDelay(3000, 8000);
-                }
-            } catch (e) { console.warn('Erro nas recomendações:', e.message); }
 
             console.log('🎉 Engajamento concluído com sucesso!');
             break; 
@@ -309,22 +251,18 @@ async function executarSequenciaGetflix() {
     console.log('Ciclo do bot finalizado.');
 }
 
-// --- LÓGICA DE LOOP (Pausa rápida: 5 a 10 segundos) ---
 async function processQueue() {
     if (isProcessing) return;
     isProcessing = true;
 
     while (true) {
         await executarSequenciaGetflix();
-        
-        // Pausa rápida apenas para limpar a memória do Render e não travar
         const tempoDescanso = Math.floor(Math.random() * (10 - 5 + 1) + 5);
         console.log(`\n⏳ Ciclo concluído. Próximo ciclo em ${tempoDescanso} segundos...`);
         await new Promise(r => setTimeout(r, tempoDescanso * 1000));
     }
 }
 
-// --- ENDPOINTS DA API ---
 app.get('/health', (req, res) => {
     res.json({
         status: 'online',
