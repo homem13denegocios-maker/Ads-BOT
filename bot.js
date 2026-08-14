@@ -15,7 +15,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const SITE_URL = 'https://getflix-phi.vercel.app/';
+const SITE_URL = 'https://getflixfree.vercel.app/';
 
 // ✅ CONFIGURAÇÃO DOS 30 IPs PREMIUM DO DECODO (3 Contas)
 const DECODO_PROXIES = [
